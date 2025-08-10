@@ -15,7 +15,7 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileN
     while(remSize>0){
         bytesRead=min(blockSize,remSize);
         ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
-        //cout<<buffer<<endl;
+        cout<<buffer<<endl;
         buffer[bytes]='\0';
         for(int i=0,j=bytesRead-1;i<bytesRead/2;i++,j--){
             char temp=buffer[i];
@@ -24,7 +24,8 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileN
         }
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
-        cout<<"remSize:"<<remSize<<endl;
+        //cout<<"remSize:"<<remSize<<endl;
+        cout<<"progress:"<<double(fileSize-remSize)*100/double(fileSize)<<endl;
         //lseek(inputFileDescriptor,bytesRead,SEEK_CUR);
         //buffer[0]='\0';
     }
@@ -32,7 +33,32 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileN
     close(outputFileDescriptor);
 }
 void fullReversal(int inputFileDescriptor,int outputFileDescriptor,string fileName,off_t fileSize){
-
+    ssize_t block=1e6;
+    char buffer[block];
+    if(block<fileSize)
+    off_t pointer=lseek(inputFileDescriptor,-block,SEEK_END);
+    else 
+    off_t pointer=lseek(inputFileDescriptor,0,SEEK_SET);
+    off_t remSize=fileSize;
+    ssize_t bytesRead;
+    while(remSize>0){
+        bytesRead=min(block,remSize);
+        ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
+        cout<<buffer<<endl;
+        buffer[bytes]='\0';
+        for(int i=0,j=bytesRead-1;i<bytesRead/2;i++,j--){
+            char temp=buffer[i];
+            buffer[i]=buffer[j];
+            buffer[j]=temp;
+        }
+        write(outputFileDescriptor,buffer,bytesRead);  
+        remSize=remSize-bytesRead;
+        if(remSize>=block){
+            lseek(inputFileDescriptor,-2*block,SEEK_CUR);
+        }else{
+            lseek(inputFileDescriptor,0,SEEK_SET);
+        }
+    }
 }
 void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,string fileName,off_t start,off_t end,off_t fileSize){
 
