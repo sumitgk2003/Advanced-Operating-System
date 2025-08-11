@@ -15,7 +15,7 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileN
     while(remSize>0){
         bytesRead=min(blockSize,remSize);
         ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
-        cout<<buffer<<endl;
+        //cout<<buffer<<endl;
         buffer[bytes]='\0';
         for(int i=0,j=bytesRead-1;i<bytesRead/2;i++,j--){
             char temp=buffer[i];
@@ -25,7 +25,7 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileN
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
         //cout<<"remSize:"<<remSize<<endl;
-        cout<<"progress:"<<double(fileSize-remSize)*100/double(fileSize)<<endl;
+        cout<<"\r\033[2K"<<"progress:"<<double(fileSize-remSize)*100/double(fileSize)<<flush;
         //lseek(inputFileDescriptor,bytesRead,SEEK_CUR);
         //buffer[0]='\0';
     }
@@ -53,6 +53,7 @@ void fullReversal(int inputFileDescriptor,int outputFileDescriptor,string fileNa
         }
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
+        cout<<"\r\033[2K"<<"progress:"<<double(fileSize-remSize)*100/double(fileSize)<<flush;
         if(remSize>=block){
             lseek(inputFileDescriptor,-2*block,SEEK_CUR);
         }else{
