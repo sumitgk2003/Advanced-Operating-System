@@ -34,7 +34,7 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,ssize_t bloc
     close(outputFileDescriptor);
 }
 void fullReversal(int inputFileDescriptor,int outputFileDescriptor,off_t fileSize){
-    ssize_t block=1;
+    ssize_t block=1e6;
     char buffer[block];
     if(block<fileSize)
     off_t pointer=lseek(inputFileDescriptor,-block,SEEK_END);
@@ -176,7 +176,7 @@ int main(int arg_count,char* arg_value[]){
     }
 
     if(mkdir("Assignment1",0700)==-1){
-        if(errno=EEXIST){
+        if(errno==EEXIST){
             cout<<"Directory Already Exists"<<endl;
         }else{
             cout<<"mkdir failed";
