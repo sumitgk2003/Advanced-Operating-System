@@ -7,7 +7,7 @@
 #include<sys/stat.h>
 using namespace std;
 
-void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileName,ssize_t blockSize,off_t fileSize){
+void blockReversal(int inputFileDescriptor,int outputFileDescriptor,ssize_t blockSize,off_t fileSize){
     off_t remSize=fileSize;
     off_t pointer=lseek(inputFileDescriptor,0,SEEK_SET);
     char buffer[blockSize+1];
@@ -29,11 +29,12 @@ void blockReversal(int inputFileDescriptor,int outputFileDescriptor,string fileN
         //lseek(inputFileDescriptor,bytesRead,SEEK_CUR);
         //buffer[0]='\0';
     }
+    cout<<endl;
     close(inputFileDescriptor);
     close(outputFileDescriptor);
 }
-void fullReversal(int inputFileDescriptor,int outputFileDescriptor,string fileName,off_t fileSize){
-    ssize_t block=1e6;
+void fullReversal(int inputFileDescriptor,int outputFileDescriptor,off_t fileSize){
+    ssize_t block=1;
     char buffer[block];
     if(block<fileSize)
     off_t pointer=lseek(inputFileDescriptor,-block,SEEK_END);
@@ -44,7 +45,7 @@ void fullReversal(int inputFileDescriptor,int outputFileDescriptor,string fileNa
     while(remSize>0){
         bytesRead=min(block,remSize);
         ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
-        cout<<buffer<<endl;
+        //cout<<buffer<<endl;
         buffer[bytes]='\0';
         for(int i=0,j=bytesRead-1;i<bytesRead/2;i++,j--){
             char temp=buffer[i];
@@ -54,15 +55,90 @@ void fullReversal(int inputFileDescriptor,int outputFileDescriptor,string fileNa
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
         cout<<"\r\033[2K"<<"progress:"<<double(fileSize-remSize)*100/double(fileSize)<<flush;
+        
         if(remSize>=block){
             lseek(inputFileDescriptor,-2*block,SEEK_CUR);
         }else{
             lseek(inputFileDescriptor,0,SEEK_SET);
         }
     }
+    cout<<endl;
+    close(inputFileDescriptor);
+    close(outputFileDescriptor);
 }
-void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,string fileName,off_t start,off_t end,off_t fileSize){
-
+void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t start,off_t end,off_t fileSize){
+    ssize_t block=1e6;
+    off_t firstBlockSize=start;
+    char buffer[block];
+    if(block<firstBlockSize)
+    off_t pointer=lseek(inputFileDescriptor,start-block,SEEK_SET);
+    else 
+    off_t pointer=lseek(inputFileDescriptor,0,SEEK_SET);
+    off_t remSize=firstBlockSize;
+    ssize_t bytesRead;
+    while(remSize>0){
+        bytesRead=min(block,remSize);
+        ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
+        //cout<<buffer<<endl;
+        buffer[bytes]='\0';
+        for(int i=0,j=bytesRead-1;i<bytesRead/2;i++,j--){
+            char temp=buffer[i];
+            buffer[i]=buffer[j];
+            buffer[j]=temp;
+        }
+        write(outputFileDescriptor,buffer,bytesRead);  
+        remSize=remSize-bytesRead;
+        cout<<"\r\033[2K"<<"progress of first block:"<<double(firstBlockSize-remSize)*100/double(firstBlockSize)<<flush;
+        
+        if(remSize>=block){
+            lseek(inputFileDescriptor,-2*block,SEEK_CUR);
+        }else{
+            lseek(inputFileDescriptor,0,SEEK_SET);
+        }
+    }
+    cout<<endl;
+    off_t secondBlockSize=end-start+1;
+    off_t pointer=lseek(inputFileDescriptor,start,SEEK_SET);
+    remSize=secondBlockSize;
+    while(remSize>0){
+        bytesRead=min(block,remSize);
+        ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
+        buffer[bytes]='\0';
+        write(outputFileDescriptor,buffer,bytesRead);  
+        remSize=remSize-bytesRead;
+        cout<<"\r\033[2K"<<"progress of second block:"<<double(secondBlockSize-remSize)*100/double(secondBlockSize)<<flush;
+    }
+    cout<<endl;
+    off_t thirdBlockSize=fileSize-end-1;
+    //fullReversal(inputFileDescriptor,outputFileDescriptor,thirdBlockSize);
+    if(block<thirdBlockSize)
+    off_t pointer=lseek(inputFileDescriptor,-block,SEEK_END);
+    else 
+    off_t pointer=lseek(inputFileDescriptor,end+1,SEEK_SET);
+    remSize=thirdBlockSize;
+    while(remSize>0){
+        bytesRead=min(block,remSize);
+        ssize_t bytes=read(inputFileDescriptor,buffer,bytesRead);
+        //cout<<buffer<<endl;
+        buffer[bytes]='\0';
+        for(int i=0,j=bytesRead-1;i<bytesRead/2;i++,j--){
+            char temp=buffer[i];
+            buffer[i]=buffer[j];
+            buffer[j]=temp;
+        }
+        write(outputFileDescriptor,buffer,bytesRead);  
+        remSize=remSize-bytesRead;
+        cout<<"\r\033[2K"<<"progress of third block:"<<double(thirdBlockSize-remSize)*100/double(thirdBlockSize)<<flush;
+        
+        if(remSize>=block){
+            lseek(inputFileDescriptor,-2*block,SEEK_CUR);
+        }else{
+            lseek(inputFileDescriptor,0,SEEK_SET);
+        }
+    }
+    cout<<endl;
+    close(inputFileDescriptor);
+    close(outputFileDescriptor);
 }
 
 
@@ -116,6 +192,8 @@ int main(int arg_count,char* arg_value[]){
     if(fileSize==0){
         cout<<"File is empty"<<endl;
         return 1;
+    }if(fileSize==-1){
+        cout<<"File is not present";
     }
 
     ssize_t blockSize;
@@ -148,9 +226,9 @@ int main(int arg_count,char* arg_value[]){
     int out=open(outputPath.c_str(),O_WRONLY|O_CREAT|O_TRUNC,0600);
     if(out==-1)cout<<"Error while file creating";
     
-    if(flag==0)blockReversal(fd,out,fileName,blockSize,fileSize);
-    if(flag==1)fullReversal(fd,out,fileName,fileSize);
-    if(flag==2)partialRangeReversal(fd,out,fileName,start,end,fileSize);
+    if(flag==0)blockReversal(fd,out,blockSize,fileSize);
+    if(flag==1)fullReversal(fd,out,fileSize);
+    if(flag==2)partialRangeReversal(fd,out,start,end,fileSize);
     
     // for(int i=0,j=strlen(buffer)-1;i<strlen(buffer)/2;i++,j--){
     //     char temp=buffer[i];
