@@ -35,7 +35,7 @@ void permissionChecker(struct stat stat,string s){
     else cout<<"No"<<endl;
 }
 
-void verify0(int oldFileDescriptor,int newFileDescriptor,off_t blockSize,off_t fileSize){
+bool verify0(int oldFileDescriptor,int newFileDescriptor,off_t blockSize,off_t fileSize){
     off_t remSize=fileSize;
     off_t pointer=lseek(oldFileDescriptor,0,SEEK_SET);
     off_t pointer1=lseek(newFileDescriptor,0,SEEK_SET);
@@ -61,13 +61,14 @@ void verify0(int oldFileDescriptor,int newFileDescriptor,off_t blockSize,off_t f
         } 
         cout<<oldBuffer<<endl;
         cout<<newBuffer<<endl;
-        if(strcmp(oldBuffer,newBuffer)!=0)cout<<"error";
+        if(strcmp(oldBuffer,newBuffer)!=0)return false;
         remSize=remSize-bytesRead;
     }
-    cout<<endl;
+    return true;
+    //cout<<endl;
 }
 
-void verify1(int oldFileDescriptor,int newFileDescriptor,off_t fileSize){
+bool verify1(int oldFileDescriptor,int newFileDescriptor,off_t fileSize){
     ssize_t blockSize=1e6;
     //char buffer[block];
     off_t remSize=fileSize;
@@ -106,14 +107,14 @@ void verify1(int oldFileDescriptor,int newFileDescriptor,off_t fileSize){
             lseek(oldFileDescriptor,0,SEEK_SET);
         }
         if(strcmp(oldBuffer,newBuffer)!=0){
-            cout<<"Error";
-            return;
+            return false;
         }
     }
-    cout<<endl;
+    return true;
+    //cout<<endl;
 }
 
-void verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t start,off_t end){
+bool verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t start,off_t end){
     ssize_t block=1e6;
     off_t firstBlockSize=start;
     char oldBuffer[block+1];
@@ -141,8 +142,8 @@ void verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t st
         remSize=remSize-bytesRead;
         //cout<<"\r\033[2K"<<"progress of first block:"<<double(firstBlockSize-remSize)*100/double(firstBlockSize)<<flush;
         if(strcmp(oldBuffer,newBuffer)!=0){
-            cout<<"error"<<endl;
-            return;
+            
+            return false; 
         }
         if(remSize>=block){
             lseek(oldFileDescriptor,-2*block,SEEK_CUR);
@@ -150,7 +151,7 @@ void verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t st
             lseek(oldFileDescriptor,0,SEEK_SET);
         }
     }
-    cout<<endl;
+    //cout<<endl;
     off_t secondBlockSize=end-start+1;
     off_t pointer=lseek(oldFileDescriptor,start,SEEK_SET);
     remSize=secondBlockSize;
@@ -164,12 +165,12 @@ void verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t st
         //write(outputFileDescriptor,oldBuffer,bytesRead);  
         remSize=remSize-bytesRead;
         if(strcmp(oldBuffer,newBuffer)!=0){
-            cout<<"error"<<endl;
-            return;
+            
+            return false;
         }
         //cout<<"\r\033[2K"<<"progress of second block:"<<double(secondBlockSize-remSize)*100/double(secondBlockSize)<<flush;
     }
-    cout<<endl;
+    //cout<<endl;
     off_t thirdBlockSize=fileSize-end-1;
     //fullReversal(oldFileDescriptor,outputFileDescriptor,thirdBlockSize);
     if(block<thirdBlockSize)
@@ -193,8 +194,8 @@ void verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t st
         remSize=remSize-bytesRead;
         //cout<<"\r\033[2K"<<"progress of third block:"<<double(thirdBlockSize-remSize)*100/double(thirdBlockSize)<<flush;
         if(strcmp(oldBuffer,newBuffer)!=0){
-            cout<<"error"<<endl;
-            return;
+            
+            return false; 
         }
         if(remSize>=block){
             lseek(oldFileDescriptor,-2*block,SEEK_CUR);
@@ -202,18 +203,19 @@ void verify2(int oldFileDescriptor,int newFileDescriptor,off_t fileSize,off_t st
             lseek(oldFileDescriptor,0,SEEK_SET);
         }
     }
-    cout<<endl;
+    return true;
+    //cout<<endl;
 }
 
 int main(int arg_count,char* arg_value[]){
-    cout<<arg_count<<endl;
+    //cout<<arg_count<<endl;
     if(arg_count<5){
         cout<<"Very less arguments";
         return 1;
     }
-    for(int i=0;i<arg_count;i++){
-        cout<<arg_value[i]<<endl;
-    }
+    // for(int i=0;i<arg_count;i++){
+    //     cout<<arg_value[i]<<endl;
+    // }
     long long int flag =strtoll(arg_value[4],NULL,10);
     string newFilePath = arg_value[1];
     string oldFilePath = arg_value[2];
@@ -272,7 +274,7 @@ int main(int arg_count,char* arg_value[]){
             return 1;
         }
     }
-    cout<<"blockSize:"<<blockSize<<endl;
+    //cout<<"blockSize:"<<blockSize<<endl;
     off_t start,end;
     if(flag==2){   
         start=strtoll(arg_value[5],NULL,10);
@@ -286,12 +288,22 @@ int main(int arg_count,char* arg_value[]){
             return 1;
         }
     }
+    cout<<"Whether file contents are correctly processed: ";
     if(flag==0){
-        verify0(oldFileDescriptor,newFileDescriptor,blockSize,oldFileSize);
+        if(verify0(oldFileDescriptor,newFileDescriptor,blockSize,oldFileSize))
+            cout<<"Yes"<<endl;
+        else
+            cout<<"No"<<endl;
     }else if(flag==1){
-        verify1(oldFileDescriptor,newFileDescriptor,oldFileSize);
+        if(verify1(oldFileDescriptor,newFileDescriptor,oldFileSize))
+            cout<<"Yes"<<endl;
+        else
+            cout<<"No"<<endl;
     }else if(flag==2){
-        verify2(oldFileDescriptor,newFileDescriptor,oldFileSize,start,end);
+        if(verify2(oldFileDescriptor,newFileDescriptor,oldFileSize,start,end))
+            cout<<"Yes"<<endl;
+        else
+            cout<<"No"<<endl;
     }
     
     cout<<"Both Files Sizes are Same: ";

@@ -68,6 +68,8 @@ void fullReversal(int inputFileDescriptor,int outputFileDescriptor,off_t fileSiz
 }
 void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t start,off_t end,off_t fileSize){
     ssize_t block=1e6;
+    off_t totalRem=fileSize;
+    off_t totalCompleted=0;
     off_t firstBlockSize=start;
     char buffer[block];
     if(block<firstBlockSize)
@@ -88,7 +90,8 @@ void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t
         }
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
-        cout<<"\r\033[2K"<<"progress of first block:"<<double(firstBlockSize-remSize)*100/double(firstBlockSize)<<flush;
+        totalRem=totalRem-bytesRead;
+        cout<<"\r\033[2K"<<"progress:"<<double(fileSize-totalRem)*100/double(fileSize)<<flush;
         
         if(remSize>=block){
             lseek(inputFileDescriptor,-2*block,SEEK_CUR);
@@ -96,7 +99,7 @@ void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t
             lseek(inputFileDescriptor,0,SEEK_SET);
         }
     }
-    cout<<endl;
+    //cout<<endl;
     off_t secondBlockSize=end-start+1;
     off_t pointer=lseek(inputFileDescriptor,start,SEEK_SET);
     remSize=secondBlockSize;
@@ -106,9 +109,10 @@ void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t
         buffer[bytes]='\0';
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
-        cout<<"\r\033[2K"<<"progress of second block:"<<double(secondBlockSize-remSize)*100/double(secondBlockSize)<<flush;
+        totalRem=totalRem-bytesRead;
+        cout<<"\r\033[2K"<<"progress:"<<double(fileSize-totalRem)*100/double(fileSize)<<flush;
     }
-    cout<<endl;
+    //cout<<endl;
     off_t thirdBlockSize=fileSize-end-1;
     //fullReversal(inputFileDescriptor,outputFileDescriptor,thirdBlockSize);
     if(block<thirdBlockSize)
@@ -128,7 +132,8 @@ void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t
         }
         write(outputFileDescriptor,buffer,bytesRead);  
         remSize=remSize-bytesRead;
-        cout<<"\r\033[2K"<<"progress of third block:"<<double(thirdBlockSize-remSize)*100/double(thirdBlockSize)<<flush;
+        totalRem=totalRem-bytesRead;
+        cout<<"\r\033[2K"<<"progress:"<<double(fileSize-totalRem)*100/double(fileSize)<<flush;
         
         if(remSize>=block){
             lseek(inputFileDescriptor,-2*block,SEEK_CUR);
@@ -143,18 +148,18 @@ void partialRangeReversal(int inputFileDescriptor,int outputFileDescriptor,off_t
 
 
 int main(int arg_count,char* arg_value[]){
-    cout<<arg_count<<endl;
+    //cout<<arg_count<<endl;
     if(arg_count<3){
         cout<<"Very less arguments";
         return 1;
     }
-    for(int i=0;i<arg_count;i++){
-        cout<<arg_value[i]<<endl;
-    }
+    // for(int i=0;i<arg_count;i++){
+    //     cout<<arg_value[i]<<endl;
+    // }
     long long int flag =strtoll(arg_value[2],NULL,10);
     string fileName = arg_value[1];
-    cout<<fileName<<endl;
-    cout<<arg_value[2]<<endl;
+    //cout<<fileName<<endl;
+    //cout<<arg_value[2]<<endl;
     if(flag==0){
         if(arg_count!=4){
             cout<<"Wrong number of arguments for flag 0";
@@ -188,7 +193,7 @@ int main(int arg_count,char* arg_value[]){
 
     int fd=open(fileName.c_str(),O_RDONLY);
     off_t fileSize=lseek(fd,0,SEEK_END);
-    cout<<"fileSize:"<<fileSize<<endl;
+    //cout<<"fileSize:"<<fileSize<<endl;
     if(fileSize==0){
         cout<<"File is empty"<<endl;
         return 1;
@@ -204,7 +209,7 @@ int main(int arg_count,char* arg_value[]){
             return 1;
         }
     }
-    cout<<"blockSize:"<<blockSize<<endl;
+    //cout<<"blockSize:"<<blockSize<<endl;
     off_t start,end;
     if(flag==2){   
         start=strtoll(arg_value[3],NULL,10);
@@ -219,24 +224,14 @@ int main(int arg_count,char* arg_value[]){
         }
     }
     
-    //char buffer[1024];
-    //ssize_t bytes=read(fd,buffer,1024);
-    
     string outputPath="Assignment1/"+to_string(flag)+"_"+fileName;
     int out=open(outputPath.c_str(),O_WRONLY|O_CREAT|O_TRUNC,0600);
+
     if(out==-1)cout<<"Error while file creating";
+    else cout<<"File created successfully"<<endl;
     
     if(flag==0)blockReversal(fd,out,blockSize,fileSize);
     if(flag==1)fullReversal(fd,out,fileSize);
     if(flag==2)partialRangeReversal(fd,out,start,end,fileSize);
-    
-    // for(int i=0,j=strlen(buffer)-1;i<strlen(buffer)/2;i++,j--){
-    //     char temp=buffer[i];
-    //     buffer[i]=buffer[j];
-    //     buffer[j]=temp;
-    // }
-    // write(out,buffer,1024);
-    // close(fd);
-    // close(out);
 
 }
